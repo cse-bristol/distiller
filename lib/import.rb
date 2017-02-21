@@ -92,24 +92,22 @@ module Distiller
       dataset_name = "OS Locator"
       description_url = "http://www.ordnancesurvey.co.uk/business-and-government/products/os-locator.html"
 
-      ("a".."d").each do |letter|
-        dataset_url = "https://github.com/OpenAddressesUK/OS_Locator/blob/gh-pages/OS_Locator2014_2_OPEN_xa#{letter}.txt?raw=true"
+      
+        dataset_url = "https://github.com/OpenAddressesUK/OS_Locator/blob/gh-pages/OS_Locator2014_2_OPEN_xa.txt?raw=true"
         downloaded_at = DateTime.now
-        locator = HTTParty.get(dataset_url).parsed_response
-
-        CSV.parse(locator, col_sep: ":") do |row|
-          ll = en_to_ll(row[2], row[3])
+        
+        CSV.parse(File.read("data/streets.csv"), headers:true) do |row|
+          ll = en_to_ll(row[1], row[2])
           Street.create(
             name: row[0],
-            settlement: row[8],
-            locality: row[9],
-            authority:row[11],
+            settlement: "",
+            locality: row[3],
+            authority: "",
             lat_lng: [ll[:lat], ll[:lng]],
-            easting_northing: [row[3], row[2]],
+            easting_northing: "",
             provenance: create_provenance(dataset_url, dataset_name, downloaded_at, description_url)
           )
         end
-      end
     end
 
     def self.parse_date(date, format = "%Y%m")
