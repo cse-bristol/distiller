@@ -36,21 +36,17 @@ module Distiller
     end
 
     def self.towns
-      dataset_name = "Wikipedia list of Post Towns in the United Kingdom"
+      dataset_name = "Address Base Towns"
       dataset_url = "https://en.wikipedia.org/wiki/List_of_post_towns_in_the_United_Kingdom"
       downloaded_at = DateTime.now
       description_url = "https://en.wikipedia.org/wiki/List_of_post_towns_in_the_United_Kingdom"
 
-      page = Nokogiri.parse HTTParty.get(dataset_url).body
-      rows = page.css("table.toccolours tr")
-      rows.shift # Remove the header row
-
-      rows.each do |row|
-        area = row.css("td").first.inner_text
-        towns = row.css("td").last.css("a[href^='/wiki']").each do |town|
-          Town.create(area: area, name: town.inner_text.upcase, provenance: create_provenance(dataset_url, dataset_name, downloaded_at, description_url))
+      CSV.parse(File.read("data/towns.csv"), headers:true) do |row|
+        Town.create(
+          area: row[1],
+          name: row[0],
+          provenance: create_provenance(dataset_url, dataset_name, downloaded_at, description_url))
         end
-      end
     end
 
     def self.postcodes
@@ -91,22 +87,23 @@ module Distiller
     def self.streets
       dataset_name = "OS Locator"
       description_url = "http://www.ordnancesurvey.co.uk/business-and-government/products/os-locator.html"
+      dataset_url = "https://github.com/OpenAddressesUK/OS_Locator/blob/gh-pages/OS_Locator2014_2_OPEN_xa.txt?raw=true"
+      downloaded_at = DateTime.now
 
-      
-        dataset_url = "https://github.com/OpenAddressesUK/OS_Locator/blob/gh-pages/OS_Locator2014_2_OPEN_xa.txt?raw=true"
-        downloaded_at = DateTime.now
-        
-        CSV.parse(File.read("data/streets.csv"), headers:true) do |row|
-          ll = en_to_ll(row[1], row[2])
+
+      CSV.open("data/streets.6.csv",headers: true) do |street|
+        streets = street.each
+        streets.select do |row|
           Street.create(
             name: row[0],
-            settlement: "",
-            locality: row[3],
+            settlement: row[6],
+            locality: row[5],
             authority: "",
-            lat_lng: [ll[:lat], ll[:lng]],
-            easting_northing: "",
+            lat_lng: [row[1], row[2]],
+            easting_northing: [row[4], row[3]],
             provenance: create_provenance(dataset_url, dataset_name, downloaded_at, description_url)
           )
+          end
         end
     end
 
